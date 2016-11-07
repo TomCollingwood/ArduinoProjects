@@ -1,5 +1,6 @@
 /*
 
+ ORIGINAL CODE WAS: 
  Esplora TFT EtchASketch
 
  This example for the Arduino TFT and Esplora draws
@@ -12,6 +13,8 @@
  Created 15 April 2013 by Scott Fitzgerald
 
  http://www.arduino.cc/en/Tutorial/EsploraTFTEtchASketch
+
+  EDITED BY TOM COLLINGWOOD INTO A B SPLINE PEN TOOL
 
  */
 
