@@ -14,13 +14,17 @@
 
  http://www.arduino.cc/en/Tutorial/EsploraTFTEtchASketch
 
-  EDITED BY TOM COLLINGWOOD INTO A B SPLINE PEN TOOL
+ EDITED BY TOM COLLINGWOOD INTO A B SPLINE PEN TOOL
+  CODE ALSO USED FROM:
+    http://krazydad.com/tutorials/makecolors.php (for colours)
+    Peter Cominos (for B-spline method)
 
  */
 
 #include <Esplora.h>
 #include <TFT.h>  // Arduino LCD library
 #include <SPI.h>
+
 
 typedef double matrix_3d_t[4][4];
 
@@ -29,6 +33,7 @@ int xPos = EsploraTFT.width() / 2;
 int yPos = EsploraTFT.height() / 2;
 int prevxPos = EsploraTFT.width() / 2;
 int prevyPos = EsploraTFT.height() / 2;
+
 
 int buttstate=0;
 
@@ -44,9 +49,25 @@ int _y3 =0;
 int _x4 =0;
 int _y4 =0;
 
-void drawcurve(int sx1,int sy1,int sx2,int sy2,int x3,int y3,int x4,int y4)
+void drawcurve(int sx1,int sy1,int sx2,int sy2,int x3,int y3,int x4,int y4, bool blacks,bool temp)
 {
-   int n = 5;
+
+      float frequency1=0.3f;
+    float frequency2=0.3f;
+    float frequency3=0.3f;
+    int phase1=0;
+    int phase2=2;
+    int phase3=4;
+    int center = 128;
+    int width = 127;
+    int len = 50;
+
+    static int red, green, blue;
+
+
+    static int colorstep=0;
+
+   int n = 10;
     matrix_3d_t G;
     matrix_3d_t M;
 
@@ -84,6 +105,11 @@ void drawcurve(int sx1,int sy1,int sx2,int sy2,int x3,int y3,int x4,int y4)
     M[3][2]=1.0/6.0;
     M[3][3]=0;
 
+    if (!temp && !blacks)
+    {
+      colorstep-=n;
+    }
+
 
     matrix_3d_t C; /* Coefficient Matrix */
     double t1, t2, t3, dt, x1, y1, z1, w1, x2, y2, z2, w2;
@@ -117,6 +143,16 @@ void drawcurve(int sx1,int sy1,int sx2,int sy2,int x3,int y3,int x4,int y4)
     w2 = t3 * C[0][3] + t2 * C[1][3] + t1 * C[2][3] + C[3][3];
     if (!(fabs(w2) > 0)) w2 = 1;
 
+    if(!blacks) {
+      //Credit: http://krazydad.com/tutorials/makecolors.php
+      colorstep++;
+      red = sin(frequency1*colorstep + phase1) * width + center;
+      green = sin(frequency2*colorstep + phase2) * width + center;
+      blue = sin(frequency3*colorstep + phase3) * width + center;
+      EsploraTFT.stroke(blue, green, red);
+    }
+
+    else EsploraTFT.stroke(0, 0, 0);
     EsploraTFT.line(x1, y1, x2, y2);
     x1 = x2; y1 = y2; z1 = z2; w1 = w2;
     }
@@ -132,6 +168,8 @@ void setup() {
 }
 
 void loop() {
+
+
 
   prevxPos=xPos;
   prevyPos=yPos;
@@ -182,8 +220,10 @@ void loop() {
     buttstate++;
     if(buttstate==1)
     {
+
+      
       EsploraTFT.stroke(0, 0, 0);
-      drawcurve(_x2,_y2,_x3,_y3,_x4,_y4,_x4,_y4);
+      drawcurve(_x2,_y2,_x3,_y3,_x4,_y4,_x4,_y4,true,false);
     _x1=_x2;
     _y1=_y2;
     _x2=_x3;
@@ -194,11 +234,12 @@ void loop() {
     _x4=xPos;
     _y4=yPos;
 
-    EsploraTFT.stroke(255, 255, 255);
-    drawcurve(_x1,_y1,_x2,_y2,_x3,_y3,_x4,_y4);
+    
+    drawcurve(_x1,_y1,_x2,_y2,_x3,_y3,_x4,_y4,false,false);
 
     //clamped temp
-    drawcurve(_x2,_y2,_x3,_y3,_x4,_y4,_x4,_y4);
+    
+    drawcurve(_x2,_y2,_x3,_y3,_x4,_y4,_x4,_y4,false,true);
     
     }
   }
@@ -209,7 +250,7 @@ void loop() {
 
   // check the accelerometer values and clear
   // the screen if it is being shaken
-  if (abs(Esplora.readAccelerometer(X_AXIS)) > 200 || abs(Esplora.readAccelerometer(Y_AXIS)) > 200) {
+  if (Esplora.readButton(SWITCH_2)==LOW) {
     EsploraTFT.background(0, 0, 0);
   }
 
